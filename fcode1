@@ -1,0 +1,130 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <iomanip>
+#include <sstream>
+
+using namespace std;
+
+struct Transaction {
+    double amount;
+    string category;
+    string date;       // format: DD-MM-YYYY
+    string description;
+    bool isIncome;     // true = income, false = expense
+};
+
+vector<Transaction> transactions;
+
+// Utility to trim spaces
+string trim(const string &s) {
+    size_t start = s.find_first_not_of(" \t\n\r");
+    if (start == string::npos) return "";
+    size_t end = s.find_last_not_of(" \t\n\r");
+    return s.substr(start, end - start + 1);
+}
+
+// Validate simple date format DD-MM-YYYY
+bool validDate(const string &date) {
+    if (date.size() != 10 || date[2] != '-' || date[5] != '-') return false;
+    for (int i = 0; i < 10; i++) {
+        if (i==2 || i==5) continue;
+        if (!isdigit(date[i])) return false;
+    }
+    return true;
+}
+
+// Extract MM-YYYY from date
+string monthKey(const string &date) {
+    if (!validDate(date)) return "00-0000";
+    return date.substr(3, 7);
+}
+
+// Add transaction
+void addTransaction(bool isIncome) {
+    double amount;
+    string category, date, desc;
+
+    cout << (isIncome ? "Adding Income\n" : "Adding Expense\n");
+    cout << "Amount: "; cin >> amount; cin.ignore();
+    if (amount <= 0) { cout << "Amount must be positive!\n"; return; }
+
+    cout << "Category: "; getline(cin, category); category = trim(category);
+    cout << "Date (DD-MM-YYYY): "; getline(cin, date); date = trim(date);
+    if (!validDate(date)) { cout << "Invalid date format!\n"; return; }
+
+    cout << "Description (optional): "; getline(cin, desc); desc = trim(desc);
+
+    transactions.push_back({amount, category, date, desc, isIncome});
+    cout << "Transaction added successfully!\n";
+}
+
+// Calculate and show monthly report
+void monthlyReport() {
+    string month;
+    cout << "Enter month and year (MM-YYYY): ";
+    getline(cin, month); month = trim(month);
+
+    double income = 0, expense = 0;
+    vector<pair<string,double>> incCat, expCat;
+
+    cout << fixed << setprecision(2);
+
+    for (auto &t : transactions) {
+        if (monthKey(t.date) != month) continue;
+        if (t.isIncome) income += t.amount;
+        else expense += t.amount;
+    }
+
+    cout << "\n--- Monthly Report (" << month << ") ---\n";
+    cout << "Total Income : " << income << "\n";
+    cout << "Total Expense: " << expense << "\n";
+    cout << "Net Savings  : " << (income - expense) << "\n";
+    cout << "-------------------------------\n";
+}
+
+// Show all-time summary
+void allTimeReport() {
+    double income = 0, expense = 0;
+    for (auto &t : transactions) {
+        if (t.isIncome) income += t.amount;
+        else expense += t.amount;
+    }
+
+    cout << fixed << setprecision(2);
+    cout << "\n--- All-Time Summary ---\n";
+    cout << "Total Income : " << income << "\n";
+    cout << "Total Expense: " << expense << "\n";
+    cout << "Net Savings  : " << (income - expense) << "\n";
+    cout << "------------------------\n";
+}
+
+// Calculate current balance
+double balance() {
+    double b = 0;
+    for (auto &t : transactions) b += (t.isIncome ? t.amount : -t.amount);
+    return b;
+}
+
+// Main menu
+void showMenu() {
+    cout << "\nPersonal Finance Tracker\n";
+    cout << "Current Balance: Rs." << fixed << setprecision(2) << balance() << "\n";
+    cout << "1. Add Income\n2. Add Expense\n3. View Monthly Report\n4. View All-Time Summary\n5. Exit\n";
+    cout << "Choose: ";
+}
+
+int main() {
+    while (true) {
+        showMenu();
+        string choice; getline(cin, choice); choice = trim(choice);
+
+        if (choice == "1") addTransaction(true);
+        else if (choice == "2") addTransaction(false);
+        else if (choice == "3") monthlyReport();
+        else if (choice == "4") allTimeReport();
+        else if (choice == "5") { cout << "Goodbye!\n"; break; }
+        else cout << "Invalid choice!\n";
+    }
+    return 0;
+}
